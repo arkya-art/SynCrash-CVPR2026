@@ -65,6 +65,7 @@ The pipeline operates in three decoupled stages:
 </p>
 
 The figure above illustrates our spatial localization heuristic in action. On the left (Success Case), clear daytime visibility allows the detection of both vehicles; our pipeline accurately estimates their trajectory intersection to pinpoint a T-Bone collision. On the right (Failure/Fallback Case), low light and occlusion cause the detector to miss the second vehicle; rather than failing catastrophically, our system relies on its robust fallback strategy to predict a single-vehicle event at the frame center, demonstrating resilience under degraded CCTV conditions.
+
 ---
 
 ## Repository Structure
