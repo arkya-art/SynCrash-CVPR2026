@@ -16,8 +16,8 @@ from torch.utils.data import Dataset, DataLoader
 from scipy.ndimage import gaussian_filter1d
 from tqdm import tqdm
 
-from model_binary import BinaryAccidentModel
-from dataset_binary_clips import MEAN, STD, METADATA_VOCABS
+from models.videomae_accident import BinaryAccidentModel
+from data.dataset import MEAN, STD, METADATA_VOCABS
 
 
 class TestClipDataset(Dataset):

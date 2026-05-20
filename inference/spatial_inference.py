@@ -25,12 +25,12 @@ from pathlib import Path
 from tqdm import tqdm
 from itertools import combinations
 
-sys.path.insert(0, os.path.dirname(__file__))
-from config import BASE_DIR, TEST_ANN_DIR, TEST_META_CSV
-
 # User-specified paths
-BASELINE_V5_CSV = "/ihub/homedirs/sc_hrrs/arkya/accident_comp/submission_v5.csv"
-OUTPUT_CSV      = os.path.join(BASE_DIR, "accident_comp/transformer_pipeline/submission_hybrid__exactframe_v2.csv")
+BASE_DIR = "/ihub/homedirs/sc_hrrs/arkya"
+TEST_ANN_DIR = os.path.join(BASE_DIR, "test_annotations")
+TEST_META_CSV = os.path.join(BASE_DIR, "test_metadata.csv")
+BASELINE_V5_CSV = os.path.join(BASE_DIR, "submission_v4.csv")
+OUTPUT_CSV      = os.path.join(BASE_DIR, "SynCrash-CVPR2026", "submission_hybrid__exactframe_v2.csv")
 
 # How many frames before the accident frame to use for trajectory estimation
 TRAJECTORY_WINDOW = 5

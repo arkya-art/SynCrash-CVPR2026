@@ -22,14 +22,14 @@ from torch.amp import GradScaler, autocast
 from sklearn.metrics import confusion_matrix, classification_report
 from tqdm import tqdm
 
-from dataset_binary_clips import BinaryClipDataset
-from model_binary import BinaryAccidentModel
+from data.dataset import BinaryClipDataset
+from models.videomae_accident import BinaryAccidentModel
 
 # ============================================================================
 # Discord Webhook
 # ============================================================================
 
-DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1486599758792491028/Z3pZhS0kQpqpD6vjPNvP32Y8vrXu5jT5GPI3PA8OmemGHMjgncOmSuxIO7WKD7M_6_8b"
+DISCORD_WEBHOOK_URL = "YOUR_DISCORD_WEBHOOK_URL_HERE"
 
 def send_discord_msg(content):
     try:
