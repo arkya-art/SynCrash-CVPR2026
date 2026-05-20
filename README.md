@@ -61,11 +61,10 @@ The pipeline operates in three decoupled stages:
 | **VideoMAEv2 + YOLO + heuristic (Ours)** | **0.38** | **0.40** |
 
 <p align="center">
-  <img src="figures/design_evolution.png" alt="Design Evolution" width="700"/>
+  <img src="figures/qualitative_localization.png" alt="Qualitative Localization" width="800"/>
 </p>
 
-*Our experiments demonstrate that decoupling temporal and spatial reasoning, and relying on object-centric representations with physics-based heuristics, provides a far more robust solution under zero-shot sim-to-real constraints than end-to-end multi-task models.*
-
+*The figure above illustrates our spatial localization heuristic in action. On the left (Success Case), clear daytime visibility allows the detection of both vehicles; our pipeline accurately estimates their trajectory intersection to pinpoint a T-Bone collision. On the right (Failure/Fallback Case), low light and occlusion cause the detector to miss the second vehicle; rather than failing catastrophically, our system relies on its robust fallback strategy to predict a single-vehicle event at the frame center, demonstrating resilience under degraded CCTV conditions.*
 ---
 
 ## Repository Structure
