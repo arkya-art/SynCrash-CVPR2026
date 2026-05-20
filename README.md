@@ -1,47 +1,57 @@
 # SynCrash: Multi-Stage Zero-Shot Accident Detection
 
-**Accepted at CVPR 2026 (Workshop)** | Denver, Colorado  
-**Authors:** Arkya Bagchi, Ritul Jangir, Varun Raskar (Autopilot, Indian Institute of Technology Jodhpur, India)  
-**Contact:** [arkyabagchi1112@gmail.com](mailto:arkyabagchi1112@gmail.com) | [LinkedIn](https://www.linkedin.com/in/arkya-bagchi-11018461/)
+**Accepted at CVPR 2026 Workshop (Non-Archival)** | Denver, Colorado, June 3–7  
+**Authors:** Arkya Bagchi, Ritul Jangir, Varun Raskar  
+**Affiliation:** Indian Institute of Technology Jodhpur, India  
+**Contact:** [arkyabagchi1112@gmail.com](mailto:arkyabagchi1112@gmail.com) · [LinkedIn](https://www.linkedin.com/in/arkya-bagchi-11018461/)
 
 ---
 
+## Architecture
+
+<p align="center">
+  <img src="figures/architecture-diagram.jpeg" alt="SynCrash Pipeline Architecture" width="800"/>
+</p>
+
 ## Overview
-Accident detection in low-res CCTV is challenging due to compression and occlusions. 
-Our key insight is that **temporal dynamics transfer better from synthetic data than spatial features.**
+
+Accident detection in low-resolution CCTV is challenging due to compression artifacts and occlusions. Our key insight is that **temporal dynamics transfer better from synthetic data than spatial features**.
 
 ### Contributions
-- **Modular three-stage pipeline (T, S, C).**
-- **Domain-bridging VideoMAEv2 training.**
-- **Physics-informed spatial localization.**
+- Modular three-stage pipeline (**Temporal → Spatial → Classification**).
+- Domain-bridging VideoMAEv2 training with CCTV-degradation augmentations.
+- Physics-informed spatial localization using a 6-strategy heuristic cascade.
 
 ---
 
 ## Method
 
-SynCrash decouples accident detection into three sequential stages:
+### Stage 1 — Temporal Localization
+- **VideoMAEv2-Giant** backbone (1408-d features) with metadata embeddings (scene, weather, daytime → 1504-d combined vector).
+- Binary classification via `BCEWithLogitsLoss`, trained with AdamW (lr = 2e-5).
+- Dense sliding-window inference (stride 2) + Gaussian smoothing (σ = 2) → argmax → predicted accident time.
 
-### Stage 1: Temporal Localization
-- Uses a **VideoMAEv2-giant backbone**.
-- Employs **CCTV-degradation augmentations** (motion blur, compression artifacts, noise) and **metadata embeddings** to bridge the sim2real domain gap.
-
-### Stage 2: Spatial Localization
-- Leverages **YOLO detection + Trajectory estimation**.
-- Uses a robust geometric priority cascade for impact localization:
+### Stage 2 — Spatial Localization
+- **YOLOv8 + ByteTrack** detection cached as JSON bounding boxes.
+- 6-strategy geometric priority cascade:
   1. BBox Overlap Centroid
-  2. Trajectory Intersection
-  3. Size-weighted Midpoint
+  2. Trajectory Ray Intersection
+  3. Size-Weighted Midpoint
+  4. Closest Pair
+  5. Single Vehicle Center
+  6. Fallback (0.5, 0.5)
 
-### Stage 3: Collision-Type Classification
-- **Rule-based logic:** Classifies into head-on, rear-end, or t-bone based on the relative motion vectors of the detected vehicles.
+### Stage 3 — Collision-Type Classification
+- Rule-based kinematic heuristic using velocity vectors from 5-frame polyfit trajectory estimation.
+- Classes: `single` · `rear-end` · `t-bone` · `sideswipe` · `head-on`
 
 ---
 
-## Quantitative Results
+## Results
 
-*Ranks 17th overall on the private leaderboard for the ACCIDENT@CVPR2026 benchmark.*
+*Ranks 17th overall on the ACCIDENT@CVPR2026 private leaderboard.*
 
-| Method | Public Score | Private Score |
+| Method | Public | Private |
 | :--- | :---: | :---: |
 | Graph-based interaction model | 0.27 | 0.25 |
 | ViViT (joint multi-task) | 0.28 | 0.28 |
@@ -50,20 +60,79 @@ SynCrash decouples accident detection into three sequential stages:
 | VideoMAEv2 + Q-former (query-based) | 0.37 | 0.36 |
 | **VideoMAEv2 + YOLO + heuristic (Ours)** | **0.38** | **0.40** |
 
----
-
-## Conclusions
-- SynCrash achieves **0.38/0.40 (public/private)** on the benchmark.
-- **Decoupling temporal and spatial reasoning is critical:** each task exhibits distinct sensitivity to domain shift.
-
-### Limitations & Future Work
-- Rule-based classification struggles with complex interactions.
-- Future work will focus on improved interaction modeling and tighter stage integration with cross-stage feedback.
+<p align="center">
+  <img src="figures/design_evolution.png" alt="Design Evolution" width="700"/>
+</p>
 
 ---
 
-## Figures
-See the root directory for high-resolution (`.png` and `.pdf`) diagrams used in the CVPR poster:
-- `syncrash_pipeline` (Overall Architecture)
-- `design_evolution` (Method Progression)
-- `qualitative_localization` (Success/Failure Case Visualizations)
+## Repository Structure
+
+```
+SynCrash-CVPR2026/
+├── models/
+│   ├── videomae_accident.py      # VideoMAEv2-Giant model definition + metadata embedding
+│   └── train.py                  # Training loop (BCEWithLogitsLoss, AdamW, mixed-precision)
+├── data/
+│   ├── dataset.py                # Dataset class, augmentation pipeline, metadata vocabs
+│   ├── preprocess_train.py       # Extract 16-frame clips from training videos
+│   └── preprocess_test.py        # Extract 16-frame clips from test videos
+├── inference/
+│   ├── temporal_inference.py     # Stage 1: Raw video → accident time prediction
+│   ├── temporal_inference_fast.py# Stage 1: Fast inference from preprocessed .pt clips
+│   └── spatial_inference.py      # Stage 2+3: YOLO + heuristic cascade → impact point + type
+├── scripts/
+│   ├── train.sh                  # SLURM job script for training
+│   ├── inference.sh              # SLURM job script for temporal inference
+│   └── inference_fast.sh         # SLURM job script for fast clip-based inference
+├── figures/
+│   ├── architecture-diagram.jpeg # Pipeline architecture (poster figure)
+│   ├── design_evolution.png      # Method progression chart
+│   └── qualitative_localization.png # Success vs failure case visualization
+├── README.md
+└── .gitignore
+```
+
+---
+
+## Quick Start
+
+### 1. Preprocessing
+```bash
+# Extract 16-frame clips from raw videos
+python data/preprocess_train.py --video_dir <path> --out_dir <path>
+python data/preprocess_test.py  --video_dir <path> --out_dir <path>
+```
+
+### 2. Training
+```bash
+sbatch scripts/train.sh
+# or directly:
+python models/train.py --clips_csv <path> --clips_dir <path>
+```
+
+### 3. Inference
+```bash
+# Temporal (accident time prediction)
+python inference/temporal_inference.py --model_weights <path> --test_csv <path>
+
+# Spatial (impact point + collision type)
+python inference/spatial_inference.py --temporal_csv <path> --video_dir <path>
+```
+
+---
+
+## References
+
+- Wang et al. *VideoMAEv2: Scaling Video Masked Autoencoders with Dual Masking.* CVPR 2023.
+- Redmon et al. *You Only Look Once: Unified, Real-Time Object Detection.* CVPR 2016.
+- Zhang et al. *ByteTrack: Multi-Object Tracking by Associating Every Detection Box.* ECCV 2022.
+- Arnab et al. *ViViT: A Video Vision Transformer.* ICCV 2021.
+- Teed & Deng. *RAFT: Recurrent All-Pairs Field Transforms for Optical Flow.* ECCV 2020.
+- Dosovitskiy et al. *CARLA: An Open Urban Driving Simulator.* CoRL 2017.
+
+---
+
+## License
+
+This project is released for academic and research purposes.
